@@ -42,8 +42,6 @@ enum MetadataExtractor {
                     artist = try? await item.load(.stringValue)
                 case .commonKeyAlbumName:
                     album = try? await item.load(.stringValue)
-                case .commonKeyType:
-                    genre = genre ?? (try? await item.load(.stringValue))
                 case .commonKeyArtwork:
                     if let value = try? await item.load(.dataValue) {
                         artworkData = value

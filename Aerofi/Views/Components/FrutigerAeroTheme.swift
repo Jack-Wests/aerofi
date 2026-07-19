@@ -65,14 +65,14 @@ enum Aero {
 /// App-wide animated bright gradient backdrop with soft bokeh circles and a
 /// subtle top-edge light reflection, evoking the "nature-tech" Aero look.
 struct AeroBackground: View {
-    @State private var animate = false
+    @State private var drift = false
 
     var body: some View {
         ZStack {
             Aero.backgroundGradient
                 .ignoresSafeArea()
 
-            BokehLayer()
+            BokehLayer(drift: drift)
                 .ignoresSafeArea()
                 .opacity(0.55)
 
@@ -84,29 +84,38 @@ struct AeroBackground: View {
             .ignoresSafeArea()
             .blendMode(.plusLighter)
         }
-        .onAppear { animate = true }
-        .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: animate)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 6).repeatForever(autoreverses: true)) {
+                drift = true
+            }
+        }
     }
 }
 
 /// Soft floating "bokeh"/lens-flare style translucent circles, a signature
 /// Frutiger Aero motif alongside water droplets and leaves.
 struct BokehLayer: View {
+    var drift: Bool = false
+
     private struct Bubble: Identifiable {
         let id = UUID()
         let size: CGFloat
         let x: CGFloat
         let y: CGFloat
         let opacity: Double
+        /// How far this bubble drifts vertically and scales up at the far
+        /// end of the drift animation — varied per bubble so the whole
+        /// layer doesn't pulse in obvious lockstep.
+        let driftDistance: CGFloat
     }
 
     private let bubbles: [Bubble] = [
-        Bubble(size: 180, x: 0.12, y: 0.10, opacity: 0.35),
-        Bubble(size: 90, x: 0.80, y: 0.06, opacity: 0.45),
-        Bubble(size: 130, x: 0.85, y: 0.35, opacity: 0.30),
-        Bubble(size: 60, x: 0.20, y: 0.55, opacity: 0.40),
-        Bubble(size: 220, x: 0.55, y: 0.80, opacity: 0.25),
-        Bubble(size: 45, x: 0.10, y: 0.85, opacity: 0.5)
+        Bubble(size: 180, x: 0.12, y: 0.10, opacity: 0.35, driftDistance: 14),
+        Bubble(size: 90, x: 0.80, y: 0.06, opacity: 0.45, driftDistance: -10),
+        Bubble(size: 130, x: 0.85, y: 0.35, opacity: 0.30, driftDistance: 18),
+        Bubble(size: 60, x: 0.20, y: 0.55, opacity: 0.40, driftDistance: -8),
+        Bubble(size: 220, x: 0.55, y: 0.80, opacity: 0.25, driftDistance: 12),
+        Bubble(size: 45, x: 0.10, y: 0.85, opacity: 0.5, driftDistance: -14)
     ]
 
     var body: some View {
@@ -123,7 +132,11 @@ struct BokehLayer: View {
                             )
                         )
                         .frame(width: bubble.size, height: bubble.size)
-                        .position(x: proxy.size.width * bubble.x, y: proxy.size.height * bubble.y)
+                        .scaleEffect(drift ? 1.08 : 1.0)
+                        .position(
+                            x: proxy.size.width * bubble.x,
+                            y: proxy.size.height * bubble.y + (drift ? bubble.driftDistance : 0)
+                        )
                 }
             }
         }
