@@ -1,12 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct NowPlayingView: View {
     @Environment(AudioPlayerService.self) private var player
-    @Environment(\.modelContext) private var modelContext
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.dismiss) private var dismiss
 
-    @State private var playerViewModel: PlayerViewModel?
     @State private var showingLyrics = false
     @State private var showingQueue = false
 
@@ -21,8 +19,10 @@ struct NowPlayingView: View {
                     .padding(.top, 10)
 
                 if let song = player.currentSong {
-                    Aero.caption("PLAYING FROM LIBRARY")
+                    Text("PLAYING FROM LIBRARY")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
                         .tracking(1.5)
+                        .foregroundStyle(Aero.inkSoft)
 
                     ZStack {
                         if showingLyrics {
@@ -49,13 +49,11 @@ struct NowPlayingView: View {
                     }
                     .padding(.horizontal, 30)
 
-                    if let vm = playerViewModel {
-                        Scrubber(viewModel: vm)
-                            .padding(.horizontal, 24)
+                    Scrubber(viewModel: playerViewModel)
+                        .padding(.horizontal, 24)
 
-                        transportControls(vm)
-                            .padding(.top, 4)
-                    }
+                    transportControls
+                        .padding(.top, 4)
 
                     bottomRow
                         .padding(.bottom, 24)
@@ -66,17 +64,12 @@ struct NowPlayingView: View {
                 }
             }
         }
-        .onAppear {
-            if playerViewModel == nil {
-                playerViewModel = PlayerViewModel(player: player, modelContext: modelContext)
-            }
-        }
         .sheet(isPresented: $showingQueue) {
             QueueView()
         }
     }
 
-    private func transportControls(_ vm: PlayerViewModel) -> some View {
+    private var transportControls: some View {
         HStack(spacing: 26) {
             Button {
                 player.toggleShuffle()

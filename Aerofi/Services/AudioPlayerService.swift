@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import MediaPlayer
+import UIKit
 import Observation
 
 enum RepeatMode {
@@ -48,7 +49,7 @@ final class AudioPlayerService {
     private var player = AVPlayer()
     private var timeObserverToken: Any?
     private var endObserver: NSObjectProtocol?
-    private var onSongDidBecomeCurrent: ((Song) -> Void)?
+    private var onSongDidBecomeCurrent: (@MainActor (Song) -> Void)?
 
     init() {
         configureAudioSession()
@@ -58,7 +59,7 @@ final class AudioPlayerService {
 
     /// Injected by the app root so the player can bump `playCount` /
     /// `lastPlayedAt` on the SwiftData model without owning a ModelContext itself.
-    func onTrackStarted(_ handler: @escaping (Song) -> Void) {
+    func onTrackStarted(_ handler: @escaping @MainActor (Song) -> Void) {
         onSongDidBecomeCurrent = handler
     }
 
@@ -74,28 +75,28 @@ final class AudioPlayerService {
         let center = MPRemoteCommandCenter.shared()
 
         center.playCommand.addTarget { [weak self] _ in
-            self?.play()
+            Task { @MainActor in self?.play() }
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            self?.pause()
+            Task { @MainActor in self?.pause() }
             return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
-            self?.togglePlayPause()
+            Task { @MainActor in self?.togglePlayPause() }
             return .success
         }
         center.nextTrackCommand.addTarget { [weak self] _ in
-            self?.skipToNext()
+            Task { @MainActor in self?.skipToNext() }
             return .success
         }
         center.previousTrackCommand.addTarget { [weak self] _ in
-            self?.skipToPrevious()
+            Task { @MainActor in self?.skipToPrevious() }
             return .success
         }
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
-            guard let self, let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            self.seek(to: event.positionTime)
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            Task { @MainActor in self?.seek(to: event.positionTime) }
             return .success
         }
     }
@@ -103,9 +104,11 @@ final class AudioPlayerService {
     private func addPeriodicTimeObserver() {
         let interval = CMTime(seconds: 0.5, preferredTimescale: 600)
         timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self else { return }
-            self.currentTime = time.seconds.isFinite ? time.seconds : 0
-            self.updateNowPlayingElapsedTime()
+            Task { @MainActor in
+                guard let self else { return }
+                self.currentTime = time.seconds.isFinite ? time.seconds : 0
+                self.updateNowPlayingElapsedTime()
+            }
         }
     }
 
@@ -155,6 +158,25 @@ final class AudioPlayerService {
             } else if first > currentIndex, destination <= currentIndex {
                 currentIndex += 1
             }
+        }
+    }
+
+    /// Purges every occurrence of a song from the live queue — used when a
+    /// song is deleted from the library so playback doesn't keep a
+    /// reference to a file that no longer exists on disk.
+    func removeSong(withID id: UUID) {
+        unshuffledQueue.removeAll { $0.id == id }
+        var wasCurrentRemoved = false
+        while let removedIndex = queue.firstIndex(where: { $0.id == id }) {
+            if removedIndex == currentIndex { wasCurrentRemoved = true }
+            queue.remove(at: removedIndex)
+            if removedIndex < currentIndex {
+                currentIndex -= 1
+            }
+        }
+        if wasCurrentRemoved {
+            currentIndex = min(currentIndex, max(queue.count - 1, 0))
+            loadCurrentItem(autoplay: isPlaying)
         }
     }
 

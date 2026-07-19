@@ -20,6 +20,7 @@ struct SongRow: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Playlist.name) private var playlists: [Playlist]
     @State private var showingNewPlaylistSheet = false
+    @State private var showingDeleteConfirm = false
 
     var body: some View {
         Button(action: onTap) {
@@ -104,10 +105,25 @@ struct SongRow: View {
                     Label("Remove from Playlist", systemImage: "minus.circle")
                 }
             }
+
+            Divider()
+            Button(role: .destructive) {
+                showingDeleteConfirm = true
+            } label: {
+                Label("Delete from Library", systemImage: "trash")
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .foregroundStyle(Aero.inkSoft)
                 .padding(8)
+        }
+        .confirmationDialog(
+            "Delete \u{201C}\(song.title)\u{201D} from your library?",
+            isPresented: $showingDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive, action: deleteFromLibrary)
+            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -116,6 +132,13 @@ struct SongRow: View {
         let item = PlaylistItem(position: nextPosition, playlist: playlist, song: song)
         modelContext.insert(item)
         playlist.dateModified = Date()
+        try? modelContext.save()
+    }
+
+    private func deleteFromLibrary() {
+        player.removeSong(withID: song.id)
+        LibraryStorage.deleteFile(relativePath: song.relativeFilePath)
+        modelContext.delete(song)
         try? modelContext.save()
     }
 }

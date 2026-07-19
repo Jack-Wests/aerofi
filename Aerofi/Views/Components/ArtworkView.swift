@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Renders song/album artwork with a glossy rounded frame and a subtle glass
 /// reflection strip, falling back to a generated note-and-droplet placeholder
