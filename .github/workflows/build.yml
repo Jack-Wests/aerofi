@@ -29,6 +29,7 @@ jobs:
         run: xcodegen generate
 
       - name: Build for iOS Simulator
+        id: xcbuild
         run: |
           set -o pipefail
           xcodebuild build \
@@ -36,4 +37,16 @@ jobs:
             -scheme Aerofi \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO 2>&1 | tee /tmp/build.log
+
+      - name: Surface compiler errors
+        if: failure()
+        run: |
+          echo "## Compile errors" >> "$GITHUB_STEP_SUMMARY"
+          # Emit each unique "error:" line as an annotation (readable via the API)
+          # and into the run summary. Grep never returns nonzero-fatal here.
+          grep -E "error:" /tmp/build.log | sort -u | while IFS= read -r line; do
+            echo "::error::${line}"
+            echo "- ${line}" >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit 1
