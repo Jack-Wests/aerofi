@@ -1,0 +1,39 @@
+name: Build
+
+# Compile-checks Aerofi on GitHub's free macOS runners on every push to main.
+# This lets us find and fix Swift compile errors WITHOUT a physical Mac —
+# only device-specific testing (installing on an iPhone, verifying background
+# audio / lock-screen controls) needs real hardware.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show selected Xcode
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Aerofi.xcodeproj \
+            -scheme Aerofi \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO

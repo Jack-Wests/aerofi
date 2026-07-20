@@ -5,6 +5,34 @@ aesthetic (glossy glass panels, bright sky/aqua gradients, bubbly 3D buttons —
 think early iTunes, Windows Vista, the click-wheel iPod era). Built with
 SwiftUI + SwiftData, targeting **iOS 17+**.
 
+---
+
+## ▶ Continue here (current state — read this first)
+
+**Where the project is:** a complete first draft of every feature is written and
+pushed. The remaining work is (1) getting it to **compile cleanly**, (2) running it
+on a real iPhone, and (3) polish. See `HANDOFF.md` for the full context handoff.
+
+**The plan (owner has limited Mac access):** we are compile-checking the app on
+GitHub's free cloud Macs via GitHub Actions (see `.github/workflows/build.yml`)
+*before* touching a physical Mac, so the owner's scarce Xcode time is spent only on
+the parts that truly need a device (installing on their iPhone, testing background
+audio and lock-screen controls).
+
+**Interactive preview** of the UI (no Xcode needed): open `preview/aerofi-preview.html`
+in any browser — it's a clickable mock of all the screens and the Frutiger Aero look,
+including the animated aquarium background (clownfish, blue tang, moorish idol).
+
+**Done so far:** models, Frutiger Aero design system, animated aquarium background,
+file import + metadata/artwork extraction, lrclib.net lyrics auto-fetch (synced +
+plain), AVPlayer engine (queue/shuffle/repeat/background/lock-screen), library
+(songs/albums/artists), playlists (create/reorder/delete), now-playing + mini player
++ queue + synced lyrics, search, upload flow, and Finder/iTunes drag-in import.
+
+**Ideas noted for later (not yet built):** an iPod-classic "click wheel" now-playing
+mode; optional web-hosted library. Ask a fresh Claude Code session for these once the
+app compiles and runs.
+
 ## What's here
 
 ```
