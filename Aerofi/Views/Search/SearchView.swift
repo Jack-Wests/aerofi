@@ -17,7 +17,7 @@ struct SearchView: View {
 
                 if viewModel.query.trimmingCharacters(in: .whitespaces).isEmpty {
                     promptState
-                } else if results.isEmpty {
+                } else if hasNoResults {
                     noResultsState
                 } else {
                     resultsList
@@ -38,6 +38,11 @@ struct SearchView: View {
             viewModel.matchingArtists(in: allArtists),
             viewModel.matchingPlaylists(in: allPlaylists)
         )
+    }
+
+    private var hasNoResults: Bool {
+        let r = results
+        return r.songs.isEmpty && r.albums.isEmpty && r.artists.isEmpty && r.playlists.isEmpty
     }
 
     private var resultsList: some View {
