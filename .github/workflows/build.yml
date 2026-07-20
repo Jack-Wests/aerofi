@@ -1,9 +1,9 @@
 name: Build
 
-# Compile-checks Aerofi on GitHub's free macOS runners on every push to main.
-# This lets us find and fix Swift compile errors WITHOUT a physical Mac —
-# only device-specific testing (installing on an iPhone, verifying background
-# audio / lock-screen controls) needs real hardware.
+# Compile-checks Aerofi on GitHub's free macOS runners on every push to main,
+# so Swift compile errors get found and fixed WITHOUT a physical Mac.
+# Diagnostics are echoed as ::error:: workflow commands because that is the
+# only build-output channel readable back through this environment's API proxy.
 
 on:
   push:
@@ -19,17 +19,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show selected Xcode
-        run: xcodebuild -version
+      - name: Environment info
+        run: |
+          echo "::error::XCODE $(xcodebuild -version | tr '\n' ' ')"
+          echo "::error::SWIFT $(swift --version 2>&1 | tr '\n' ' ')"
 
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: |
+          brew install xcodegen 2>&1 | tail -3 || true
+          echo "::error::XCODEGEN which=$(which xcodegen 2>&1) version=$(xcodegen --version 2>&1 | tr '\n' ' ')"
 
       - name: Generate Xcode project
-        run: xcodegen generate
+        run: |
+          xcodegen generate --spec project.yml 2>&1 | tee /tmp/xcodegen.log || true
+          echo "::error::AFTER_GEN $(ls -1 | tr '\n' ' ')"
+          if [ ! -d Aerofi.xcodeproj ]; then
+            echo "::error::PROJECT_MISSING"
+            head -c 800 /tmp/xcodegen.log | tr '\n' '|' | sed 's/^/::error::XGLOG /'
+            exit 1
+          fi
+          echo "::error::PROJECT_OK contents=$(ls -1 Aerofi.xcodeproj | tr '\n' ' ')"
 
       - name: Build for iOS Simulator
-        id: xcbuild
         run: |
           set -o pipefail
           xcodebuild build \
@@ -42,11 +53,11 @@ jobs:
       - name: Surface compiler errors
         if: failure()
         run: |
-          echo "## Compile errors" >> "$GITHUB_STEP_SUMMARY"
-          # Emit each unique "error:" line as an annotation (readable via the API)
-          # and into the run summary. Grep never returns nonzero-fatal here.
-          grep -E "error:" /tmp/build.log | sort -u | while IFS= read -r line; do
-            echo "::error::${line}"
-            echo "- ${line}" >> "$GITHUB_STEP_SUMMARY"
-          done
+          echo "## Build failed — compiler output" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /tmp/build.log ]; then
+            grep -E "error:|Unable to|cannot find|no such|No such" /tmp/build.log | sort -u | head -20 | while IFS= read -r line; do
+              echo "::error::${line}"
+              echo "- ${line}" >> "$GITHUB_STEP_SUMMARY"
+            done
+          fi
           exit 1
