@@ -5,11 +5,9 @@ name: Build
 # Diagnostics are echoed as ::error:: workflow commands because that is the
 # only build-output channel readable back through this environment's API proxy.
 
+# Auto-runs are paused while the HTML prototype is the focus — trigger
+# manually from the Actions tab when Swift compile-checking resumes.
 on:
-  push:
-    branches: [main, "claude/**"]
-  pull_request:
-    branches: [main]
   workflow_dispatch: {}
 
 jobs:
