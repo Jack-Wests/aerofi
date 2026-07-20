@@ -36,16 +36,32 @@ final class LibraryImporter {
         self.lyricsService = lyricsService
     }
 
-    func importFiles(_ urls: [URL]) {
+    func importFiles(_ urls: [URL], removeOriginals: Bool = false) {
         for url in urls {
             let displayName = url.lastPathComponent
             let entry = ImportTask(filename: displayName, phase: .copying)
             activeImports.append(entry)
 
             Task {
-                await self.importSingleFile(url, entryID: entry.id)
+                await self.importSingleFile(url, entryID: entry.id, removeOriginal: removeOriginals)
             }
         }
+    }
+
+    /// Sweeps the top level of the app's Documents folder for audio files the
+    /// user dropped in from a computer (Finder/iTunes file sharing) or saved
+    /// via the Files app, and pulls them through the normal import pipeline.
+    /// Originals are removed after a successful copy so they don't re-import
+    /// on the next launch. Called once at app startup.
+    func importLooseDocumentFiles() {
+        let audioExtensions: Set<String> = ["mp3", "m4a", "aac", "wav", "aiff", "aif", "flac", "caf"]
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        guard let items = try? FileManager.default.contentsOfDirectory(at: documents, includingPropertiesForKeys: nil) else {
+            return
+        }
+        let audioFiles = items.filter { audioExtensions.contains($0.pathExtension.lowercased()) }
+        guard !audioFiles.isEmpty else { return }
+        importFiles(audioFiles, removeOriginals: true)
     }
 
     private func updatePhase(_ id: UUID, _ phase: ImportPhase) {
@@ -60,10 +76,10 @@ final class LibraryImporter {
         }
     }
 
-    private func importSingleFile(_ sourceURL: URL, entryID: UUID) async {
+    private func importSingleFile(_ sourceURL: URL, entryID: UUID, removeOriginal: Bool = false) async {
         do {
             updatePhase(entryID, .copying)
-            let relativePath = try LibraryStorage.importFile(from: sourceURL)
+            let relativePath = try LibraryStorage.importFile(from: sourceURL, removeOriginal: removeOriginal)
             let fileURL = LibraryStorage.absoluteURL(for: relativePath)
 
             updatePhase(entryID, .readingMetadata)

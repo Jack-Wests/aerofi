@@ -72,6 +72,10 @@ struct AeroBackground: View {
             Aero.backgroundGradient
                 .ignoresSafeArea()
 
+            AquariumLayer()
+                .ignoresSafeArea()
+                .opacity(0.85)
+
             BokehLayer(drift: drift)
                 .ignoresSafeArea()
                 .opacity(0.55)

@@ -2,6 +2,10 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AudioPlayerService.self) private var player
+    @Environment(\.modelContext) private var modelContext
+    /// Retained for the lifetime of the root view so the startup sweep of
+    /// Finder-dropped audio files isn't deallocated mid-import.
+    @State private var looseFileImporter: LibraryImporter?
 
     var body: some View {
         TabView {
@@ -21,6 +25,13 @@ struct RootView: View {
             if player.currentSong != nil {
                 MiniPlayerView()
                     .padding(.bottom, 4)
+            }
+        }
+        .task {
+            if looseFileImporter == nil {
+                let importer = LibraryImporter(modelContext: modelContext)
+                looseFileImporter = importer
+                importer.importLooseDocumentFiles()
             }
         }
     }

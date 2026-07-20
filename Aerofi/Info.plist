@@ -6,6 +6,10 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UISupportsDocumentBrowser</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
