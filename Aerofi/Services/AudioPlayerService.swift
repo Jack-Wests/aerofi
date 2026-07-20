@@ -46,9 +46,11 @@ final class AudioPlayerService {
         queue.indices.contains(currentIndex) ? queue[currentIndex] : nil
     }
 
-    private var player = AVPlayer()
-    private var timeObserverToken: Any?
-    private var endObserver: NSObjectProtocol?
+    // nonisolated(unsafe): deinit is nonisolated and must tear these down;
+    // they are only otherwise touched from the main actor.
+    @ObservationIgnored private nonisolated(unsafe) var player = AVPlayer()
+    @ObservationIgnored private nonisolated(unsafe) var timeObserverToken: Any?
+    @ObservationIgnored private nonisolated(unsafe) var endObserver: NSObjectProtocol?
     private var onSongDidBecomeCurrent: (@MainActor (Song) -> Void)?
 
     init() {
