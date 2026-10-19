@@ -107,11 +107,7 @@ app doesn't need to change.
 Built and reviewed without access to Xcode, so treat this as a strong first
 pass rather than a verified build:
 
-- **Not compiled.** No Swift toolchain was available in the build
-  environment. The code was written carefully against known SwiftUI/
-  SwiftData/AVFoundation/MediaPlayer APIs and self-reviewed line by line,
-  but only building in Xcode will catch the last mile of typos or API
-  signature drift.
+- **Compiles in CI.** The app builds for the iOS Simulator on GitHub's macOS runner (see `.github/workflows/build.yml`). It has not yet been run on a device or simulator, so runtime behaviour is unverified.
 - **No app icon / launch screen asset catalog** — add an `Assets.xcassets`
   with an `AppIcon` in the Frutiger Aero style (glossy droplet/note motif).
 - **Lyrics matching quality** depends entirely on lrclib.net's database
