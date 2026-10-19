@@ -27,7 +27,7 @@ struct GlossyButtonStyle: ButtonStyle {
                     )
                     .padding(2)
                     .mask(shape)
-                    shape.strokeBorder(Color.white.opacity(0.6), lineWidth: 1)
+                    shape.stroke(Color.white.opacity(0.6), lineWidth: 1)
                 }
             }
             .shadow(color: tint.opacity(0.5), radius: configuration.isPressed ? 4 : 10, x: 0, y: configuration.isPressed ? 2 : 6)

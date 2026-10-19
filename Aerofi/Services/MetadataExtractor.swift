@@ -65,9 +65,9 @@ enum MetadataExtractor {
                 let lowerKey = key.lowercased()
 
                 if lowerKey.contains("albumartist") || lowerKey.contains("tpe2") || lowerKey.contains("band") {
-                    albumArtist = albumArtist ?? (try? await item.load(.stringValue))
+                    if albumArtist == nil { albumArtist = try? await item.load(.stringValue) }
                 } else if lowerKey.contains("genre") || lowerKey.contains("tcon") {
-                    genre = genre ?? (try? await item.load(.stringValue))
+                    if genre == nil { genre = try? await item.load(.stringValue) }
                 } else if lowerKey.contains("tracknumber") || lowerKey.contains("trkn") {
                     if let string = try? await item.load(.stringValue) {
                         trackNumber = trackNumber ?? Self.parseLeadingInt(string)
